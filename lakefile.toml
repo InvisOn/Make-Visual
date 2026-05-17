@@ -1,10 +1,28 @@
 name = "make_visual"
 version = "0.1.0"
 defaultTargets = ["make_visual"]
+testDriver = "tests"
 
 [[lean_lib]]
 name = "Graph"
+srcDir = "src"
+
+[[lean_lib]]
+name = "Command"
+srcDir = "src"
 
 [[lean_exe]]
 name = "make_visual"
+srcDir = "src"
 root = "Main"
+
+[[lean_lib]]
+name = "Tests"
+srcDir = "tests"
+globs = ["Tests.+"]
+
+[[lean_exe]]
+name = "tests"
+srcDir = "tests"
+root = "Runner"
+
