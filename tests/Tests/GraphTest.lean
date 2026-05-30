@@ -22,6 +22,11 @@ import Std.Data.HashMap
 #eval ({ adjacency := Std.HashMap.ofList [("a", ["b"]), ("b", [])]} : DiGraph) |>.addEdges "a" (some ["c", "d"]) 
 
 
+/-- info: 5 -/
+#guard_msgs in
+#eval ({ adjacency := Std.HashMap.ofList [("a", ["b", "c"]), ("b", ["c"]), ("c", ["d"])]} : DiGraph).degree
+
+
 /-- info: some (Std.HashSet.ofList ["a", "b"]) -/
 #guard_msgs in
 #eval ({ adjacency := Std.HashMap.ofList [("a", ["b"]), ("b", [])]} : DiGraph).depthFirstSearch "a"

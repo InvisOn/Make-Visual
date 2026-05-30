@@ -63,6 +63,10 @@ namespace DiGraph
        | none => s!"  \"{node}\""
        | some dep => s!"  \"{node}\" -> \"{dep}\""
 
+  
+  def degree (graph : DiGraph) : Nat :=
+    graph.adjacency.toList.foldrTR (fun n acc => n.snd.length + acc) 0
+
 
   partial def depthFirstSearch (graph : DiGraph) (source : String) : Option (HashSet String) :=
       if !graph.adjacency.contains source then
@@ -72,6 +76,10 @@ namespace DiGraph
     where
       dfs (graph : DiGraph) (node : String) (visited : HashSet String) : HashSet String :=
         graph.adjacency.getD node [] |>.foldrTR (fun n acc => if !acc.contains n then dfs graph n acc else acc) (visited.insert node)
+      -- dfs (graph : List (String × List String)) (node : String) (visited : HashSet String) : HashSet String :=
+      --   match graph with
+      --     | first :: rest => visited.insert node
+      --     | [] => visited
 
 
 -- TODO: dfs_predecessors https://networkx.org/documentation/stable/_modules/networkx/algorithms/traversal/depth_first_search.html#dfs_predecessors
