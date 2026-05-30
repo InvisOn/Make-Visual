@@ -1,5 +1,4 @@
 import Std.Data.HashMap
-import Std.Data.HashSet
 
 
 open Std
@@ -15,20 +14,20 @@ structure DiGraph where
 namespace DiGraph
 
 
-  def addNode (graph : DiGraph) (node : String) (dependency : Option String) : DiGraph :=
-    match dependency with
+  def addEdge (graph : DiGraph) (nodeA : String) (predecessor : Option String) : DiGraph :=
+    match predecessor with
     | some dep => { 
-        adjacency := graph.adjacency.getD node {} |> (dep :: ·) |> graph.adjacency.insert node
+        adjacency := graph.adjacency.getD nodeA {} |> (dep :: ·) |>.mergeSort |> graph.adjacency.insert nodeA
       }
     | none => {
-        adjacency := graph.adjacency.getD node {} |> graph.adjacency.insert node 
+        adjacency := graph.adjacency.getD nodeA {} |>.mergeSort |> graph.adjacency.insert nodeA 
       }
 
 
-  def addNodes (graph : DiGraph) (node : String) (descendents : Option (List String)) : DiGraph :=
-    match descendents with
-      | some descendents' => descendents'.foldl (fun graph' dep => addNode graph' node (some dep)) graph
-      | none => graph.addNode node none
+  def addEdges (graph : DiGraph) (node : String) (predecessors : Option (List String)) : DiGraph :=
+    match predecessors with
+      | some descendents' => descendents'.foldl (fun graph' dep => addEdge graph' node (some dep)) graph
+      | none => graph.addEdge node none
 
 
   def reverseEdges (graph : DiGraph) : DiGraph :=
@@ -36,8 +35,8 @@ namespace DiGraph
   where
     reverse (adjacency : List (String × List String)) (acc : DiGraph) : DiGraph :=
       match adjacency with
-        | (node, []) :: rest => acc.addNode node none |> reverse rest
-        | (node, descendents) :: rest => descendents.foldl (fun graph' dep => addNode graph' dep (some node)) acc |> reverse rest
+        | (node, []) :: rest => acc.addEdge node none |> reverse rest
+        | (node, descendents) :: rest => descendents.foldl (fun graph' dep => addEdge graph' dep (some node)) acc |> reverse rest
         | [] => acc
 
 
@@ -65,12 +64,53 @@ namespace DiGraph
        | some dep => s!"  \"{node}\" -> \"{dep}\""
 
 
--- TODO: use networkx as examples for how the implement isolate node
--- https://networkx.org/documentation/stable/_modules/networkx/algorithms/traversal/depth_first_search.html
+  partial def depthFirstSearch (graph : DiGraph) (source : String) : Option (HashSet String) :=
+      if !graph.adjacency.contains source then
+        none
+      else
+        dfs graph source {}
+    where
+      dfs (graph : DiGraph) (node : String) (visited : HashSet String) : HashSet String :=
+        graph.adjacency.getD node [] |>.foldrTR (fun n acc => if !acc.contains n then dfs graph n acc else acc) (visited.insert node)
+
+
+-- TODO: dfs_predecessors https://networkx.org/documentation/stable/_modules/networkx/algorithms/traversal/depth_first_search.html#dfs_predecessors
+  def findPredecessors (graph : DiGraph) (node : String) : Option (HashSet String) :=
+    if !graph.adjacency.contains node then
+      none
+    else
+      aux graph node {}
+    where
+      aux (graph : DiGraph) (node : String) (visited : HashSet String) : HashSet String := sorry
+
+
+-- TODO: dfs_successors https://networkx.org/documentation/stable/_modules/networkx/algorithms/traversal/depth_first_search.html#dfs_successors
+  def findSuccessors (graph : DiGraph) (node : String) : Option (HashSet String) :=
+    if !graph.adjacency.contains node then
+      none
+    else
+      aux graph node {}
+    where
+      aux (graph : DiGraph) (node : String) (visited : HashSet String) : HashSet String := sorry
+
+
+-- TODO: https://github.com/networkx/networkx/blob/96ad598cbe41baf6424dfa4bb860f93569c353a9/networkx/classes/graph.py#L1793
+  def subGraph (graph : DiGraph) (nodesToKeep : HashSet String) : DiGraph := sorry
+
+
+  def lineageNode (graph : DiGraph) (node : String) : Option DiGraph :=
+    if !graph.adjacency.contains node then
+      none
+    else
+      (match graph.findPredecessors node, graph.findSuccessors node with
+        | none, none => {node}
+        | some ancestors, none => ancestors.insert node
+        | none, some descendents => descendents.insert node
+        | some ancestors, some descendents => HashSet.insertMany {node} ancestors |>.insertMany descendents
+      ) |> graph.subGraph
 
 
 end DiGraph
-
 
 
 instance : ToString DiGraph := ⟨DiGraph.toString⟩
@@ -103,7 +143,7 @@ where
         else
           match head.splitOn "\n" |>.getD 0 "" |>.splitOn ":" with
             | ".PHONY" :: _ => parseRules tail acc
-            | target :: deps :: [] => parseDeps deps |> acc.addNodes target |> parseRules tail
+            | target :: deps :: [] => parseDeps deps |> acc.addEdges target |> parseRules tail
             | _ => parseRules tail acc
 
   @[always_inline]
