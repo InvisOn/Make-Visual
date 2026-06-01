@@ -101,17 +101,15 @@ namespace DiGraph
 
 
   def getSubGraph (graph : DiGraph) (nodesToKeep : HashSet String) : DiGraph :=
-    { adjacency := graph.adjacency.filterMap predicate }
+    { adjacency := graph.adjacency.filterMap predicateMap }
   where
-    predicate (key : String) (value : List String) : Option (List String) :=
+    predicateMap (key : String) (value : List String) : Option (List String) :=
       if !nodesToKeep.contains key then
         none
       else
-        value.filter (fun n => nodesToKeep.contains n)
-
+        value.filter (nodesToKeep.contains ·)
 
 end DiGraph
-
 
 instance : ToString DiGraph := ⟨DiGraph.toString⟩
 
