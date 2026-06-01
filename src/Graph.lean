@@ -92,21 +92,20 @@ namespace DiGraph
     graph.depthFirstSearch node
 
 
--- TODO: https://github.com/networkx/networkx/blob/96ad598cbe41baf6424dfa4bb860f93569c353a9/networkx/classes/graph.py#L1793
--- TODO: dfs on source 
-  def subGraph (graph : DiGraph) (nodesToKeep : HashSet String) : DiGraph := sorry
-
-
-  def lineageNode (graph : DiGraph) (node : String) : Option DiGraph :=
+  def lineageNode (graph : DiGraph) (node : String) : Option (HashSet String) :=
     if !graph.adjacency.contains node then
       none
     else
-      (match graph.findPredecessors node, graph.findSuccessors node with
-        | none, none => {node}
+      match graph.findPredecessors node, graph.findSuccessors node with
+        | none, none => some {node}
         | some ancestors, none => ancestors.insert node
         | none, some descendents => descendents.insert node
         | some ancestors, some descendents => HashSet.insertMany {node} ancestors |>.insertMany descendents
-      ) |> graph.subGraph
+
+
+-- TODO: https://github.com/networkx/networkx/blob/96ad598cbe41baf6424dfa4bb860f93569c353a9/networkx/classes/graph.py#L1793
+-- TODO: dfs on source 
+  def subGraph (graph : DiGraph) (nodesToKeep : HashSet String) : DiGraph := sorry
 
 
 end DiGraph
