@@ -130,14 +130,19 @@ def parseMakeP (db : String) : Option DiGraph :=
   else
     graph
 where
-  rules := db.splitOn "\n\n" |>.dropWhile (fun s => !s.endsWith "# Files") |>.drop 1
+  rules := db.splitOn "\n\n" |>.dropWhile (!·.endsWith "# Files") |>.drop 1
 
   parseRules (rules : List String) (acc : DiGraph) : DiGraph :=
     match rules with
       | [] => acc
-      | head :: tail => 
+      | head :: tail =>
         if head.startsWith "#" then
-          parseRules tail acc
+          match head.splitOn "\n" with
+            | "# Not a target:" :: _ :: "#  Builtin rule" :: _ | "# Not a target:" :: ".DEFAULT:" :: _ => 
+              parseRules tail acc
+            | "# Not a target:" :: dependency :: _ =>
+              dependency.dropSuffix ":" |>.toString |> (acc.addEdge · none) |> parseRules tail
+            | _ => parseRules tail acc
         else
           match head.splitOn "\n" |>.getD 0 "" |>.splitOn ":" with
             | ".PHONY" :: _ => parseRules tail acc
@@ -149,10 +154,4 @@ where
     match deps with
     | "" => none
     | deps => some (deps.splitOn.dropWhile (fun (s : String) => s.length == 0))
-
-
--- TODO: implement only show ancesters and/or descendents of name
--- TODO: implement coloring by name
--- TODO: add unit tests
--- TODO: prove some stuff about the code maybe
 
