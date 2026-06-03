@@ -109,6 +109,17 @@ namespace DiGraph
       else
         value.filter (nodesToKeep.contains ·)
 
+
+  def pruneLineage (graph : DiGraph) (nodesToPrune : HashSet String) : DiGraph :=
+    { adjacency := graph.adjacency.filterMap predicateMap }
+  where
+    predicateMap (key : String) (value : List String) : Option (List String) :=
+      if nodesToPrune.contains key then
+        none
+      else
+        value.filter (!nodesToPrune.contains ·)
+
+
 end DiGraph
 
 instance : ToString DiGraph := ⟨DiGraph.toString⟩
@@ -123,12 +134,8 @@ def addDotHeader (dotNodes : String) : String := s!"digraph G \{
 }"
 
 
-def parseMakeP (db : String) : Option DiGraph :=
-  let graph := parseRules rules {}
-  if graph == {} then
-    none
-  else
-    graph
+def parseMakeP (db : String) : DiGraph :=
+  parseRules rules {}
 where
   rules := db.splitOn "\n\n" |>.dropWhile (!·.endsWith "# Files") |>.drop 1
 
@@ -153,5 +160,5 @@ where
   parseDeps (deps : String) : Option (List String) := 
     match deps with
     | "" => none
-    | deps => some (deps.splitOn.dropWhile (fun (s : String) => s.length == 0))
+    | deps => some (deps.splitOn.dropWhile (·.length == 0))
 

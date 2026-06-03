@@ -80,3 +80,9 @@ def graph := ({ adjacency := HashMap.ofList [("a", ["b", "c"]), ("b", ["c"]), ("
 /-- info: { adjacency := Std.HashMap.ofList [("a", ["b"]), ("b", [])] } -/
 #guard_msgs in
 #eval graph.getSubGraph {"a", "b"}
+
+
+/-- info: { adjacency := Std.HashMap.ofList [("c", [])] } -/
+#guard_msgs in
+#eval graph.pruneLineage {"a", "b", "d"}
+
