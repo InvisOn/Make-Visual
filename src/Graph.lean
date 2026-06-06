@@ -52,14 +52,12 @@ namespace DiGraph
     s!"digraph G \{
   graph [rankdir=RL]
   node [shape=box, style=solid, margin=\"0.3,0.1\"]
-  edge [color=\"#00000088\", dir=forward, penwidth=1.2, minlen=1]
+  edge [color=\"#00000088\", dir=back, penwidth=1.2, minlen=1]
 
-{filledNodes}
-
-{dotNodes}
+{if filledNodes.length == 0 then "" else filledNodes ++ "\n\n"}{dotNodes}
 }"
   where
-    filledNodes := nodesToFill.toList.foldrTR (fun s acc => s!"\"{s}\" [style = \"solid,filled\"]\n" ++ acc) ""
+    filledNodes := nodesToFill.toList.mapTR (fun s => s!"  \"{s}\" [style = \"solid,filled\"]") |> "\n".intercalate
 
     dotNodes := createNodes graph.adjacency.toList []
 
@@ -132,6 +130,10 @@ namespace DiGraph
         value.filter (!nodesToPrune.contains ·)
 
 
+  def getDependencies (graph : DiGraph) : HashSet String :=
+    graph.adjacency.values.foldrTR (fun e acc => HashSet.ofList e |> acc.insertMany) {}
+
+
 end DiGraph
 
 instance : ToString DiGraph := ⟨DiGraph.toString⟩
@@ -147,12 +149,7 @@ where
       | [] => acc
       | head :: tail =>
         if head.startsWith "#" then
-          match head.splitOn "\n" with
-            | "# Not a target:" :: _ :: "#  Builtin rule" :: _ | "# Not a target:" :: ".DEFAULT:" :: _ => 
-              parseRules tail acc
-            | "# Not a target:" :: dependency :: _ =>
-              dependency.dropSuffix ":" |>.toString |> (acc.addEdge · none) |> parseRules tail
-            | _ => parseRules tail acc
+          parseRules tail acc
         else
           match head.splitOn "\n" |>.getD 0 "" |>.splitOn ":" with
             | ".PHONY" :: _ => parseRules tail acc
