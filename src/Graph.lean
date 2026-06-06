@@ -57,7 +57,7 @@ namespace DiGraph
       s!"{adjacent.fst} -> [{", ".intercalate adjacent.snd}]"
 
 
-  def toDot (graph : DiGraph) (nodesToFill : HashSet String) : String :=
+  def toDot (graph : DiGraph) (nodesToFill : HashSet String := {}) : String :=
     s!"digraph G \{
   graph [rankdir=RL]
   node [shape=box, style=solid, margin=\"0.3,0.1\"]
@@ -91,6 +91,10 @@ namespace DiGraph
   
   def degree (graph : DiGraph) : Nat :=
     graph.adjacency.toList.foldrTR (·.snd.length + ·) 0
+
+
+  def isEmpty (graph : DiGraph) : Bool :=
+    graph.degree == 0
 
 
   def depthFirstSearch (graph : DiGraph) (source : String) : Option (HashSet String) :=
