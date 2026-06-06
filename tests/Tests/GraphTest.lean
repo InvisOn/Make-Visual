@@ -7,27 +7,14 @@ open Std
 def graph := ({ adjacency := HashMap.ofList [("a", ["b", "c"]), ("b", ["c"]), ("c", ["d"])]} : DiGraph)
 
 
-
-/-- info: { adjacency := Std.HashMap.ofList [("a", [])] } -/
-#guard_msgs in
-#eval DiGraph.empty {} |>.addEdge "a" none
-
-
-/-- info: { adjacency := Std.HashMap.ofList [("c", ["d"]), ("a", ["b", "c", "e"]), ("b", ["c"])] } -/
-#guard_msgs in
-#eval graph.addEdge "a" (some "e") 
-
-
 /-- info: { adjacency := Std.HashMap.ofList [("e", []), ("c", ["d"]), ("a", ["b", "c"]), ("b", ["c"])] } -/
 #guard_msgs in
-#eval graph.addEdges "e" none
-
-
+#eval graph.addRule "e" none
 
 
 /-- info: { adjacency := Std.HashMap.ofList [("c", ["d"]), ("a", ["b", "c", "e", "f"]), ("b", ["c"])] } -/
 #guard_msgs in
-#eval graph |>.addEdges "a" (some ["e", "f"]) 
+#eval graph |>.addRule "a" (some ["e", "f"]) 
 
 
 
@@ -40,13 +27,6 @@ def graph := ({ adjacency := HashMap.ofList [("a", ["b", "c"]), ("b", ["c"]), ("
 /-- info: "DiGraph {\nc -> [d]\na -> [b, c]\nb -> [c]\n}" -/
 #guard_msgs in
 #eval graph.toString
-
-
-
-/-- info: "  \"b\" -> \"c\"\n  \"a\" -> \"b\"\n  \"a\" -> \"c\"\n  \"c\" -> \"d\"" -/
-#guard_msgs in
-#eval graph.toDotNodes
-
 
 
 /-- info: 4 -/

@@ -14,20 +14,23 @@ structure DiGraph where
 namespace DiGraph
 
 
-  def addEdge (graph : DiGraph) (nodeA : String) (predecessor : Option String) : DiGraph :=
-    match predecessor with
-    | some dep => { 
-        adjacency := graph.adjacency.getD nodeA {} |> (dep :: ·) |>.mergeSort |> graph.adjacency.insert nodeA
-      }
-    | none => {
-        adjacency := graph.adjacency.getD nodeA {} |>.mergeSort |> graph.adjacency.insert nodeA 
-      }
+  def addRule (graph : DiGraph) (target : String) (prerequisites : Option (List String)) : DiGraph :=
+    match prerequisites with
+      | some prerequisites' => prerequisites'.foldrTR (aux target) graph
+      | none => add graph target none
+  where
+    add (graph : DiGraph) (nodeA : String) (predecessor : Option String) : DiGraph :=
+      match predecessor with
+      | some dep => { 
+          adjacency := graph.adjacency.getD nodeA {} |> (dep :: ·) |>.mergeSort |> graph.adjacency.insert nodeA
+        }
+      | none => {
+          adjacency := graph.adjacency.getD nodeA {} |>.mergeSort |> graph.adjacency.insert nodeA 
+        }
 
-
-  def addEdges (graph : DiGraph) (node : String) (predecessors : Option (List String)) : DiGraph :=
-    match predecessors with
-      | some descendents' => descendents'.foldl (fun graph' dep => addEdge graph' node (some dep)) graph
-      | none => graph.addEdge node none
+    @[always_inline]
+    aux (target : String) (prerequisite : String) (graph : DiGraph) : DiGraph :=
+      add graph target (some prerequisite)
 
 
   def reverseEdges (graph : DiGraph) : DiGraph :=
@@ -35,17 +38,23 @@ namespace DiGraph
   where
     reverse (adjacency : List (String × List String)) (acc : DiGraph) : DiGraph :=
       match adjacency with
-        | (node, []) :: rest => acc.addEdge node none |> reverse rest
-        | (node, descendents) :: rest => descendents.foldl (fun graph' dep => addEdge graph' dep (some node)) acc |> reverse rest
+        | (node, []) :: rest => acc.addRule node none |> reverse rest
+        | (node, descendents) :: rest => descendents.foldrTR (aux node) acc |> reverse rest
         | [] => acc
+
+    @[always_inline]
+    aux (node : String) (descendent : String) (graph : DiGraph) : DiGraph :=
+      graph.addRule descendent (some [node])
 
 
   def toString (graph : DiGraph) : String :=
-      let entries := graph.adjacency.toList.mapTR fun (node, descendents) =>
-      s!"{node} -> [{", ".intercalate descendents}]"
-      "DiGraph {\n" ++ 
-      "\n".intercalate entries ++ 
-      "\n}"
+    "DiGraph {\n" ++ nodes ++ "\n}"
+  where
+    nodes := graph.adjacency.toList.mapTR aux |> "\n".intercalate
+
+    @[always_inline]
+    aux (adjacent : (String × List String)) : String :=
+      s!"{adjacent.fst} -> [{", ".intercalate adjacent.snd}]"
 
 
   def toDot (graph : DiGraph) (nodesToFill : HashSet String) : String :=
@@ -54,28 +63,34 @@ namespace DiGraph
   node [shape=box, style=solid, margin=\"0.3,0.1\"]
   edge [color=\"#00000088\", dir=back, penwidth=1.2, minlen=1]
 
-{if filledNodes.length == 0 then "" else filledNodes ++ "\n\n"}{dotNodes}
+{filledNodes}{dotNodes}
 }"
   where
-    filledNodes := nodesToFill.toList.mapTR (fun s => s!"  \"{s}\" [style = \"solid,filled\"]") |> "\n".intercalate
+    filledNodes := 
+      if nodesToFill.isEmpty then
+        ""
+      else
+        nodesToFill.toList.mapTR aux |> "\n".intercalate |> (· ++ "\n\n")
+
+    @[always_inline]
+    aux (node : String) : String :=
+      s!"  \"{node}\" [style = \"solid,filled\"]"
 
     dotNodes := createNodes graph.adjacency.toList []
 
     createNodes (adjacency : List (String × List String)) (acc : List String) : String :=
       match adjacency with
         | [] => "\n".intercalate acc
-        | (node, []) :: tail => createNode node none :: acc |> createNodes tail
-        | (node, descendents) :: tail => createNodes tail (descendents.eraseDups.mapTR (fun dep => createNode node (some dep)) ++ acc)
+        | (node, []) :: tail => s!"  \"{node}\"" :: acc |> createNodes tail
+        | (node, successors) :: tail => createNodes tail (successors.eraseDups.mapTR (createEdge node) ++ acc)
 
     @[always_inline]
-    createNode (node : String) (dep : Option String) : String :=
-      match dep with
-       | none => s!"  \"{node}\""
-       | some dep => s!"  \"{node}\" -> \"{dep}\""
+    createEdge (nodeA : String) (nodeB : String) : String :=
+       s!"  \"{nodeA}\" -> \"{nodeB}\""
 
   
   def degree (graph : DiGraph) : Nat :=
-    graph.adjacency.toList.foldrTR (fun n acc => n.snd.length + acc) 0
+    graph.adjacency.toList.foldrTR (·.snd.length + ·) 0
 
 
   def depthFirstSearch (graph : DiGraph) (source : String) : Option (HashSet String) :=
@@ -85,11 +100,14 @@ namespace DiGraph
         search graph source {} graph.degree
     where
       search (graph : DiGraph) (node : String) (visited : HashSet String) (degree : Nat) : HashSet String :=
-        -- Use the degree of the graph to make function total
+        -- Without structural recursion the the graphs degree this function would be partial.
         match degree with
          | 0 => visited.insert node
-         | i + 1 => graph.adjacency.getD node [] |>.foldrTR (fun n acc => if !acc.contains n then search graph n acc i else acc) (visited.insert node)
+         | i + 1 => graph.adjacency.getD node [] |>.foldrTR (aux i) (visited.insert node)
 
+      @[always_inline]
+      aux (degree : Nat) (node : String) (visited : HashSet String) : HashSet String :=
+         if !visited.contains node then search graph node visited degree else visited
 
   def findPredecessors (graph : DiGraph) (node : String) : Option (HashSet String) := do
       graph.reverseEdges.depthFirstSearch node |>.map (·.erase node)
@@ -130,35 +148,46 @@ namespace DiGraph
         value.filter (!nodesToPrune.contains ·)
 
 
-  def getDependencies (graph : DiGraph) : HashSet String :=
-    graph.adjacency.values.foldrTR (fun e acc => HashSet.ofList e |> acc.insertMany) {}
-
-
 end DiGraph
+
 
 instance : ToString DiGraph := ⟨DiGraph.toString⟩
 
 
-def parseMakeP (db : String) : DiGraph :=
-  parseRules rules {}
+def parseMakeDatabase (database : String) : DiGraph :=
+  addTargets rules {} |> addPrerequisites
 where
-  rules := db.splitOn "\n\n" |>.dropWhile (!·.endsWith "# Files") |>.drop 1
+  rules := database.splitOn "\n\n" |>.dropWhile (!·.endsWith "# Files") |>.drop 1
 
-  parseRules (rules : List String) (acc : DiGraph) : DiGraph :=
+  addTargets (rules : List String) (acc : DiGraph) : DiGraph :=
     match rules with
       | [] => acc
       | head :: tail =>
         if head.startsWith "#" then
-          parseRules tail acc
+          addTargets tail acc
         else
           match head.splitOn "\n" |>.getD 0 "" |>.splitOn ":" with
-            | ".PHONY" :: _ => parseRules tail acc
-            | target :: deps :: [] => parseDeps deps |> acc.addEdges target |> parseRules tail
-            | _ => parseRules tail acc
+            | ".PHONY" :: _ => addTargets tail acc
+            | target :: prerequisites :: [] => parsePrerequisites prerequisites |> acc.addRule target |> addTargets tail
+            | _ => addTargets tail acc
 
   @[always_inline]
-  parseDeps (deps : String) : Option (List String) := 
+  parsePrerequisites (deps : String) : Option (List String) := 
     match deps with
     | "" => none
     | deps => some (deps.splitOn.dropWhile (·.length == 0))
+
+  getPrerequisites (graph : DiGraph) : HashSet String :=
+    graph.adjacency.values.foldrTR (HashSet.ofList · |> ·.insertMany) {}
+
+  addPrerequisites (graph : DiGraph) : DiGraph := 
+    let unAddedPrerequisites := graph.adjacency.keys |> HashSet.ofList |> (getPrerequisites graph).diff 
+    unAddedPrerequisites.toList.foldrTR aux graph
+
+  @[always_inline]
+  aux (node : String) (graph : DiGraph) : DiGraph :=
+    if !graph.adjacency.keys.contains node then
+      graph.addRule node none 
+    else 
+      graph
 

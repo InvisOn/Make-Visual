@@ -10,7 +10,7 @@ def runCommands (p : Parsed) : IO UInt32 := do
   let stdin <- IO.getStdin
   let input <- stdin.readToEnd
 
-  let mut graph := parseMakeP input
+  let mut graph := parseMakeDatabase input
 
 
   if let some node := p.flag? "keep-lineage" then
