@@ -35,28 +35,28 @@ def graph := ({ adjacency := HashMap.ofList [("a", ["b", "c"]), ("b", ["c"]), ("
 
 
 
-/-- info: some (Std.HashSet.ofList ["d", "c", "a", "b"]) -/
+/-- info: Std.HashSet.ofList ["d", "c", "a", "b"] -/
 #guard_msgs in
 #eval graph.depthFirstSearch "a"
 
 
-/-- info: some (Std.HashSet.ofList ["d", "c", "b"]) -/
+/-- info: Std.HashSet.ofList ["d", "c", "b"] -/
 #guard_msgs in
 #eval graph.depthFirstSearch "b"
 
 
 
-/-- info: some (Std.HashSet.ofList ["d", "c"]) -/
+/-- info: Std.HashSet.ofList ["d", "c"] -/
 #guard_msgs in
 #eval graph.findSuccessors "b"
 
 
-/-- info: some (Std.HashSet.ofList ["d", "c", "a", "b"]) -/
+/-- info: Std.HashSet.ofList ["d", "a", "c", "b"] -/
 #guard_msgs in
 #eval graph.getLineageNode "b"
 
 
-/-- info: some (Std.HashSet.ofList ["a", "b"]) -/
+/-- info: Std.HashSet.ofList ["a", "b"] -/
 #guard_msgs in
 #eval graph.findPredecessors "c"
 

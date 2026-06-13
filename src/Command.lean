@@ -17,25 +17,28 @@ def runCommands (p : Parsed) : IO UInt32 := do
     return 1
 
   if let some node := p.flag? "prune-lineage" then
-    match graph.getLineageNode node.value with
-    | none => 
+    let lineage := graph.getLineageNode node.value
+    if lineage.isEmpty then
       IO.eprintln s!"Cannot prune the lineage of {node.value} because it was not found in the build graph."
       return 1
-    | some lineage => graph := graph.pruneNodes lineage
+    else
+      graph := graph.pruneNodes lineage
 
   if let some node := p.flag? "keep-lineage" then
-    match graph.getLineageNode node.value with
-    | none => 
+    let lineage := graph.getLineageNode node.value
+    if lineage.isEmpty then
       IO.eprintln s!"Cannot keep only the lineage of {node.value} because it was not found in the build graph. Was this node pruned?"
       return 1
-    | some lineage => graph := graph.getSubGraph lineage
+    else
+      graph := graph.getSubGraph lineage
 
   if let some node := p.flag? "highlight-lineage" then
-    match graph.getLineageNode node.value with
-    | none => 
+    let lineage := graph.getLineageNode node.value
+    if lineage.isEmpty then
       IO.eprintln s!"Cannot highlight the lineage of {node.value} because it was not found in the build graph. Was this node pruned?"
       return 1
-    | some lineage => graph.toDot lineage |> IO.println 
+    else
+      graph.toDot lineage |> IO.println 
       return 0
 
   IO.println graph.toDot
@@ -48,8 +51,8 @@ def setupCommands : Cmd := `[Cli|
   "Parse Makefile database to dot"
 
   FLAGS:
-    p, "prune-lineage"     : String; "Prune DAG of the given node's lineage. Pruning is done first."
-    k, "keep-lineage"      : String; "Keep only the given node's lineage."
-    l, "highlight-lineage" : String; "Highlight the given node's lineage."
+    p, "prune-lineage"     : Array String; "Prune DAG of the given node's lineage. Pruning is done first. Example: -p nodeA,nodeB"
+    k, "keep-lineage"      : Array String; "Keep only the given node's lineage. Example: -k nodeA,nodeB"
+    l, "highlight-lineage" : Array String; "Highlight the given node's lineage. Example: -l nodeA,nodeB"
 ]
 

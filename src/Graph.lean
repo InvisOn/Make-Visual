@@ -97,10 +97,7 @@ namespace DiGraph
     graph.degree == 0
 
 
-  def depthFirstSearch (graph : DiGraph) (source : String) : Option (HashSet String) :=
-      if !graph.adjacency.contains source then
-        none
-      else
+  def depthFirstSearch (graph : DiGraph) (source : String) : HashSet String :=
         search graph source {} graph.degree
     where
       search (graph : DiGraph) (node : String) (visited : HashSet String) (degree : Nat) : HashSet String :=
@@ -113,23 +110,17 @@ namespace DiGraph
       aux (degree : Nat) (node : String) (visited : HashSet String) : HashSet String :=
          if !visited.contains node then search graph node visited degree else visited
 
-  def findPredecessors (graph : DiGraph) (node : String) : Option (HashSet String) := do
-      graph.reverseEdges.depthFirstSearch node |>.map (·.erase node)
+
+  def findPredecessors (graph : DiGraph) (node : String) : HashSet String :=
+      graph.reverseEdges.depthFirstSearch node |>.erase node
 
 
-  def findSuccessors (graph : DiGraph) (node : String) : Option (HashSet String) :=
-    graph.depthFirstSearch node |>.map (·.erase node)
+  def findSuccessors (graph : DiGraph) (node : String) : HashSet String :=
+    graph.depthFirstSearch node |>.erase node
 
 
-  def getLineageNode (graph : DiGraph) (node : String) : Option (HashSet String) :=
-    if !graph.adjacency.contains node then
-      none
-    else
-      match graph.findPredecessors node, graph.findSuccessors node with
-      | none, none => some {node}
-      | some ancestors, none => ancestors.insert node
-      | none, some descendents => descendents.insert node
-      | some ancestors, some descendents => HashSet.insertMany {node} ancestors |>.insertMany descendents
+  def getLineageNode (graph : DiGraph) (node : String) : HashSet String :=
+    graph.findSuccessors node |>.insertMany (graph.findPredecessors node) |>.insert node
 
 
   def getSubGraph (graph : DiGraph) (nodesToKeep : HashSet String) : DiGraph :=
