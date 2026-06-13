@@ -1,25 +1,12 @@
 # ==============================================================================
 # test_graph.mk — Makefile for exercising a make-to-dot analyzer
-#
-# Patterns covered:
-#   - Linear chains
-#   - Diamond dependencies
-#   - Fan-in / fan-out
-#   - Phony targets
-#   - Pattern rules
-#   - Multiple prerequisites
-#   - Variables as prerequisites
-#   - Conditional (ifeq) branches
-#   - Self-contained sub-graphs
 # ==============================================================================
 
-# ── Variables ──────────────────────────────────────────────────────────────────
 CC      := gcc
 SRCS    := foo.c bar.c baz.c
 OBJS    := $(SRCS:.c=.o)
 HEADERS := foo.h bar.h common.h
 
-# ── Top-level phony targets ────────────────────────────────────────────────────
 .PHONY: all clean test lint docs install uninstall check
 
 all: app docs
@@ -41,7 +28,7 @@ install: app
 uninstall:
 	@echo "Uninstalling..."
 
-# ── Linear chain: app → link → compile → preprocess ───────────────────────────
+# ── Linear chain ──────────────────────────────────────────────────────────────
 app: link
 	@echo "Building app..."
 
@@ -54,14 +41,7 @@ compile: preprocess
 preprocess:
 	@echo "Preprocessing..."
 
-# ── Diamond dependency ─────────────────────────────────────────────────────────
-#
-#        check
-#       /     \
-#   unit     integration
-#       \     /
-#        fixtures
-#
+# ── Diamond dependency ────────────────────────────────────────────────────────
 check: unit integration
 	@echo "Checking..."
 
@@ -74,7 +54,7 @@ integration: fixtures
 fixtures:
 	@echo "Setting up fixtures..."
 
-# ── Fan-out: one target feeds many ────────────────────────────────────────────
+# ── Fan-out ───────────────────────────────────────────────────────────────────
 codegen: schema
 	@echo "Generating code..."
 
@@ -87,7 +67,7 @@ docs-schema: schema
 schema:
 	@echo "Compiling schema..."
 
-# ── Fan-in: many targets feed one ─────────────────────────────────────────────
+# ── Fan-in ────────────────────────────────────────────────────────────────────
 release: app docs package sign
 	@echo "Releasing..."
 
@@ -97,11 +77,25 @@ package: app
 sign: package
 	@echo "Signing..."
 
-# ── Object file pattern rule ───────────────────────────────────────────────────
+# ── Source file stubs (satisfy prerequisites without touching the filesystem) ──
+foo.c bar.c baz.c:
+	@touch $@
+
+# ── Header dependencies ───────────────────────────────────────────────────────
+common.h:
+	@echo "Generating common.h..." && touch $@
+
+foo.h: common.h
+	@echo "Generating foo.h..." && touch $@
+
+bar.h: common.h
+	@echo "Generating bar.h..." && touch $@
+
+# ── Pattern rule ──────────────────────────────────────────────────────────────
 %.o: %.c $(HEADERS)
 	$(CC) -c $< -o $@
 
-# ── Explicit object targets (for analyzers that don't expand pattern rules) ────
+# ── Explicit object targets ───────────────────────────────────────────────────
 foo.o: foo.c foo.h common.h
 	$(CC) -c foo.c -o foo.o
 
@@ -111,17 +105,7 @@ bar.o: bar.c bar.h common.h
 baz.o: baz.c common.h
 	$(CC) -c baz.c -o baz.o
 
-# ── Header dependencies (shared node, multiple consumers) ─────────────────────
-common.h:
-	@echo "Generating common.h..."
-
-foo.h: common.h
-	@echo "Generating foo.h..."
-
-bar.h: common.h
-	@echo "Generating bar.h..."
-
-# ── Docs sub-graph ─────────────────────────────────────────────────────────────
+# ── Docs sub-graph ────────────────────────────────────────────────────────────
 api-docs: $(OBJS)
 	@echo "Building API docs..."
 
@@ -136,8 +120,8 @@ endif
 coverage: unit
 	@echo "Generating coverage report..."
 
-# ── Isolated sub-graph (no connection to main graph) ──────────────────────────
-.PHONY: bench bench-setup bench-teardown
+# ── Isolated sub-graph ────────────────────────────────────────────────────────
+.PHONY: bench bench-setup bench-teardown bench-run
 
 bench: bench-setup bench-run bench-teardown
 	@echo "Benchmark complete."
@@ -150,3 +134,4 @@ bench-run: bench-setup
 
 bench-teardown:
 	@echo "Tearing down benchmark environment..."
+
