@@ -1,6 +1,6 @@
 # Make Lineage
 
-A Lean 4 command-line tool that converts GNU Make's auto-generated database into Graphviz DOT format, with support for pruning and highlighting dependency lineage.
+A Lean 4 command-line tool that converts GNU Make's auto-generated database into Graphviz DOT format, with support for pruning and highlighting dependency lineage. It can be used to visualize the dependency graph of a Makefile.
 
 ## Overview
 
