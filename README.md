@@ -1,10 +1,12 @@
-# make_lineage
+# Make Lineage
 
 A simple Makefile to dot conversion tool. It also supports pruning and highlighting lineage.
 
 Build with `lake build -Krelease`.
 
-## Highlighting the lineage of `common.h`
+## Highlighting
+
+Highlighting the lineage of `common.h`
 
 ```sh
 LANG=C make -n -p -f res/Makefile | .lake/build/bin/ml --highlight-lineage common.h | dot -Tpng -o res/prune-common.png
@@ -12,7 +14,9 @@ LANG=C make -n -p -f res/Makefile | .lake/build/bin/ml --highlight-lineage commo
 
 ![highlight](./res/highlight-common.png)
 
-## Keeping only the lineage of `common.h`
+## Keeping
+
+Keeping only the lineage of `common.h`
 
 ```sh
 LANG=C make -n -p -f res/Makefile | .lake/build/bin/ml --keep-lineage common.h | dot -Tpng -o res/prune-common.png
@@ -20,7 +24,9 @@ LANG=C make -n -p -f res/Makefile | .lake/build/bin/ml --keep-lineage common.h |
 
 ![keep](./res/keep-common.png)
 
-## Pruning the lineage of `common.h`
+## Pruning
+
+Pruning the lineage of `common.h`
 
 ```sh
 LANG=C make -n -p -f res/Makefile | .lake/build/bin/ml --prune-lineage common.h | dot -Tpng -o res/prune-common.png
